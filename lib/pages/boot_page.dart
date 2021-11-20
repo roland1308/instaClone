@@ -79,15 +79,19 @@ class _BootPageState extends State<BootPage> {
         // body: PrincipalBody(),
           body: TabBarView(children: [
             HomePage(),
-            // CommentsPage(),
             UserSearch(),
-            ProfilePage(user: currentUser)
+            ProfilePage(
+                user: currentUser,
+                setFooterAvatar: (newAvatar) {
+                  setState(() {
+                    currentUser.avatar = newAvatar;
+                  });
+                })
           ]),
           bottomNavigationBar: TabBar(
             labelColor: Colors.black,
             tabs: [
-              Tab(icon: Icon(Icons.directions)),
-              // Tab(icon:Icon(Icons.dialpad_outlined)),
+              Tab(icon: Icon(Icons.home)),
               Tab(icon: Icon(Icons.search)),
               Tab(icon:CircleAvatar(
                 backgroundImage: NetworkImage(currentUser.avatar ??

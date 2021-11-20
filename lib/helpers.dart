@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 InputDecoration buildInputDecoration({
   String? hintText,
   Icon? prefixIcon,
+  Widget? suffixIcon,
 }) {
   return InputDecoration(
-      prefixIcon: prefixIcon ?? Icon(Icons.edit),
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
       hintText: hintText ?? "",
       filled: true,
       fillColor: Colors.white,

@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:insta_clone/DataRepository/data_repository.dart';
 import 'package:insta_clone/models/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 import '../helpers.dart';
 import '../mock.dart';
 
 class ProfilePage extends StatefulWidget {
   final InstaUser user;
-  const ProfilePage({Key? key, required this.user}) : super(key: key);
+  final Function setFooterAvatar;
+
+  const ProfilePage(
+      {Key? key, required this.user, required this.setFooterAvatar})
+      : super(key: key);
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
@@ -23,6 +29,9 @@ class _ProfilePageState extends State<ProfilePage> {
   TextEditingController nameController = TextEditingController();
   TextEditingController usernameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
+
+  final picker = ImagePicker();
+  XFile? image;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -57,8 +66,6 @@ class _ProfilePageState extends State<ProfilePage> {
     ),
     backgroundColor: Colors.black.withOpacity(.5),
   );
-
-  final ImagePicker picker = ImagePicker();
 
   @override
   void initState() {
@@ -120,33 +127,42 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: InkWell(
                             onTap: () {
                               showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      actionsAlignment: MainAxisAlignment.spaceEvenly,
-                                      title: Text('Update profile image'),
-                                      content: Text(
-                                          'Where do you want to take image from?'),
-                                      actions: [
-                                        ElevatedButton(
-                                          onPressed: () {},
-                                          child: Text('Camera'),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () {},
-                                          child: Text('Album'),
-                                        ),
-                                      ],
-                                    );
-                                  });
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    actionsAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    title: Text('Update profile image'),
+                                    content: Text(
+                                        'Where do you want to take image from?'),
+                                    actions: [
+                                      ElevatedButton.icon(
+                                          onPressed: () => {
+                                                pickImage('camera'),
+                                                Navigator.pop(context)
+                                              },
+                                          icon: const Icon(Icons.camera),
+                                          label: const Text('Camera')),
+                                      ElevatedButton.icon(
+                                          onPressed: () => {
+                                                pickImage('gallery'),
+                                                Navigator.pop(context)
+                                              },
+                                          icon: const Icon(Icons.library_add),
+                                          label: const Text('Gallery')),
+                                    ],
+                                  );
+                                },
+                              );
                             },
                             child: Stack(
                               children: [
                                 CircleAvatar(
                                   radius: isEditing ? 30 : 60,
-                                  backgroundImage: NetworkImage(widget
-                                          .user.avatar ??
-                                      "https://cdn.dribbble.com/users/304574/screenshots/6222816/male-user-placeholder.png"),
+                                  backgroundImage: image == null
+                                      ? NetworkImage(widget.user.avatar ??
+                                          "https://cdn.dribbble.com/users/304574/screenshots/6222816/male-user-placeholder.png")
+                                      : Image.file(File(image!.path)).image,
                                 ),
                                 if (!isEditing)
                                   Positioned(
@@ -271,7 +287,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                     nameController.text &&
                                 widget.user.username ==
                                     usernameController.text &&
-                                widget.user.email == emailController.text) {
+                                widget.user.email == emailController.text &&
+                                image == null) {
                               FocusScope.of(context).unfocus();
                               await Future.delayed(Duration(milliseconds: 500));
                               ScaffoldMessenger.of(context)
@@ -335,14 +352,37 @@ class _ProfilePageState extends State<ProfilePage> {
 
   saveUserInfo(InstaUser? user) async {
     FocusScope.of(context).unfocus();
+
+    // If image has been changed, upload it and get link
+    if (image != null) {
+      var response = await DataRepository().uploadImage(image!.path);
+      user!.avatar = response;
+      widget.setFooterAvatar(response);
+    }
+
     if (user != null) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       prefs.setString("loginInfo", user.toString());
-
       await MockProvider().update("users", user.toJson());
-
       await Future.delayed(Duration(milliseconds: 500));
       ScaffoldMessenger.of(context).showSnackBar(successBar);
+    }
+  }
+
+  // Select an image from the gallery or take a picture with the camera
+  Future<void> pickImage(String inputSource) async {
+    XFile? pickedImage;
+    try {
+      pickedImage = await picker.pickImage(
+          source: inputSource == 'camera'
+              ? ImageSource.camera
+              : ImageSource.gallery,
+          maxWidth: 200);
+      setState(() {
+        image = pickedImage;
+      });
+    } catch (err) {
+      print(err);
     }
   }
 }

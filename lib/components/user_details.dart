@@ -26,11 +26,11 @@ class _UserDetailsState extends State<UserDetails> {
   }
 
   Future<void> loadData() async {
-    var userAlbums = await DataRepository().getAlbum();
+    var receivedAlbums = await DataRepository().getAlbum();
     setState(() {
-      userAlbums = userAlbums
-        .where((element) => element.userId == widget.user.id)
-        .toList();
+      userAlbums = receivedAlbums
+          .where((InstaAlbum element) => element.userId == widget.user.id)
+          .toList();
       isLoading = false;
     });
     return;
@@ -41,31 +41,88 @@ class _UserDetailsState extends State<UserDetails> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text("${widget.user.name} details"),
+        title: Text("${widget.user.name} Albums"),
       ),
       body: isLoading
-      ? Center(child: CircularProgressIndicator())
-      : Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            Expanded(
-                flex: 1,
-                child: UserDetailsHeader(user: widget.user)),
-            Expanded(
-              flex: 4,
-              child: ListView.builder(
-                itemCount: userAlbums.length,
-                itemBuilder: (_, int index) {
-                  return Text(userAlbums[index].title ?? "NO_TITLE");
-                },
+          ? Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
+              child: Column(
+                children: [
+                  Expanded(
+                      flex: 1, child: UserDetailsHeader(user: widget.user)),
+                  Expanded(
+                    flex: 9,
+                    child: ListView.builder(
+                      itemCount: userAlbums.length,
+                      itemBuilder: (_, int index) {
+                        return SinglePhotosAlbum(
+                            userAlbums: userAlbums, index: index);
+                      },
+                    ),
+                  )
+                ],
               ),
-            )
-          ],
-        ),
+            ),
+    );
+  }
+}
+
+class SinglePhotosAlbum extends StatelessWidget {
+  const SinglePhotosAlbum(
+      {Key? key, required this.userAlbums, required this.index})
+      : super(key: key);
+
+  final List<InstaAlbum> userAlbums;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(8),
+      decoration: BoxDecoration(border: Border.all(color: Colors.black)),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0, bottom: 2),
+            child: Text(
+              userAlbums[index].title ?? "NO_TITLE",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Container(
+            height: 200,
+            child: FutureBuilder(
+                future: getPhotos(userAlbums[index].id),
+                builder: (context, AsyncSnapshot<List<String>> snapshot) {
+                  if (snapshot.hasData) {
+                    return GridView.count(
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        scrollDirection: Axis.horizontal,
+                        crossAxisCount: 2,
+                        children: snapshot.data!.map((String url) {
+                          return GridTile(
+                              child: Image.network(url, fit: BoxFit.cover));
+                        }).toList());
+                  } else {
+                    return Text("Loading...");
+                  }
+                }),
+          ),
+        ],
       ),
     );
   }
+}
+
+Future<List<String>> getPhotos(int albumId) async {
+  List<String> imagesUrl = await DataRepository().getPhoto(albumId: albumId);
+  return imagesUrl;
 }
 
 class UserDetailsHeader extends StatelessWidget {

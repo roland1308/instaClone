@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:insta_clone/models/album_model.dart';
 import 'package:insta_clone/models/comments_model.dart';
+import 'package:insta_clone/models/photo_model.dart';
 import 'package:insta_clone/models/posts_model.dart';
 import 'package:insta_clone/models/user_model.dart';
+import 'package:http/http.dart' as http;
 
 import '../mock.dart';
 
@@ -102,5 +104,31 @@ class DataRepository {
   //     throw Exception("There was an error $e");
   //   }
   // }
+
+  Future<String?> uploadImage(filepath) async {
+    var uri = Uri.parse('https://api.sharetoevent.indalter.es/api/v1/public/live/db2aa05a-98c9-433b-8df5-ff2bb9fabc89?type=image');
+    var request = http.MultipartRequest('POST', uri);
+    request.files.add(await http.MultipartFile.fromPath('file', filepath));
+    var res = await request.send();
+    final respStr = await res.stream.bytesToString();
+    return json.decode(respStr)["url"];
+  }
+
+  Future getPhoto({required int albumId}) async {
+    try {
+      var response = await MockProvider().get('photos');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        var decodedResponse = json.decode(response.body);
+        var receivedPhoto = List.from(decodedResponse).map((e) => InstaPhoto.fromJson(e)).toList();
+        receivedPhoto = receivedPhoto.where((element) => element.albumId == albumId).toList();
+        List<String> imagesUrl = receivedPhoto.map((element) => element.url).toList();
+        return imagesUrl;
+      } else {
+        throw Exception("Error requesting categories");
+      }
+    } catch (e) {
+      throw Exception("There was an error $e");
+    }
+  }
 
 }

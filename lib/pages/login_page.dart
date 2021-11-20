@@ -17,10 +17,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-
   TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool isObscured = true;
 
   @override
   Widget build(BuildContext context) {
@@ -78,11 +78,21 @@ class _LoginPageState extends State<LoginPage> {
                 },
                 cursorColor: Colors.black,
                 controller: passwordController,
-                obscureText: true,
+                obscureText: isObscured,
                 decoration: buildInputDecoration(
                   hintText: "Password",
-                    prefixIcon:
-                        Icon(Icons.lock_outline, color: Colors.black26)),
+                  prefixIcon: Icon(Icons.lock_outline, color: Colors.black26),
+                  suffixIcon: InkWell(
+                    onTap: () {
+                      setState(() {
+                        isObscured = !isObscured;
+                      });
+                    },
+                    child: Icon(
+                        isObscured ? Icons.visibility : Icons.visibility_off,
+                        color: Colors.black26),
+                  ),
+                ),
               ),
               SizedBox(height: 20),
               Container(
@@ -118,7 +128,6 @@ class _LoginPageState extends State<LoginPage> {
       ),
     ));
   }
-
 
   Future<void> saveDataAndGoHome({required InstaUser user}) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
