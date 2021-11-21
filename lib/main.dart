@@ -7,9 +7,9 @@ import 'mock.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await MockProvider().initDb();
+  await MockProvider().initDb();
   //
-  // http.Response response = await MockProvider().get("users");
+  http.Response response = await MockProvider().get("users");
   //print(response.body);
 
   runApp(const MyApp());
@@ -24,7 +24,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool isLogged = false;
-
+  bool isLoading = true;
   @override
   initState() {
     checkLoginOrHome();
@@ -34,11 +34,14 @@ class _MyAppState extends State<MyApp> {
     SharedPreferences pref = await SharedPreferences.getInstance();
     setState(() {
       isLogged = pref.containsKey("loginInfo");
+      isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: isLogged ? BootPage() : LoginPage());
+    return isLoading
+        ? Container()
+        : MaterialApp(home: isLogged ? BootPage() : LoginPage());
   }
 }
